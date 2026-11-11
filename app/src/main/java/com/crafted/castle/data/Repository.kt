@@ -8,7 +8,26 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-private val Context.dataStore: DataStore<String> by dataStore("castle_state.json")
+private val Context.dataStore: DataStore<String> by dataStore(
+    fileName = "castle_state.json",
+    serializer = StringSerializer
+)
+
+object StringSerializer : androidx.datastore.core.Serializer<String> {
+    override val defaultValue: String = ""
+    
+    override suspend fun readFrom(input: java.io.InputStream): String {
+        return try {
+            input.readBytes().decodeToString()
+        } catch (e: Exception) {
+            ""
+        }
+    }
+    
+    override suspend fun writeTo(t: String, output: java.io.OutputStream) {
+        output.write(t.encodeToByteArray())
+    }
+}
 
 class Repository(private val context: Context) {
     private val json = Json { ignoreUnknownKeys = true }

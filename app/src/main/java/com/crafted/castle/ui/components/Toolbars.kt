@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +56,7 @@ import com.crafted.castle.ui.theme.MaitisDarkSurfaceVariant
 import com.crafted.castle.ui.theme.MaitisPurplePrimary
 import com.crafted.castle.viewmodel.CanvasViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopBar(viewModel: CanvasViewModel) {
     TopAppBar(
@@ -167,34 +170,39 @@ private fun ToolButton(
 fun FloatingActions(viewModel: CanvasViewModel) {
     val state by viewModel.state.collectAsState()
     
-    Surface(
+    Box(
         modifier = Modifier
-            .padding(16.dp)
-            .align(Alignment.BottomEnd),
-        shape = RoundedCornerShape(16.dp),
-        color = MaitisDarkSurfaceVariant.copy(alpha = 0.9f),
-        shadowElevation = 8.dp
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.BottomEnd
     ) {
-        Row(
-            modifier = Modifier.padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier,
+            shape = RoundedCornerShape(16.dp),
+            color = MaitisDarkSurfaceVariant.copy(alpha = 0.9f),
+            shadowElevation = 8.dp
         ) {
-            IconButton(onClick = { viewModel.zoomOut() }) {
-                Icon(Icons.Default.ZoomOut, contentDescription = "Zoom Out", tint = Color.White)
-            }
-            IconButton(onClick = { viewModel.resetZoom() }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Reset Zoom", tint = Color.White)
-            }
-            IconButton(onClick = { viewModel.zoomIn() }) {
-                Icon(Icons.Default.ZoomIn, contentDescription = "Zoom In", tint = Color.White)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = { viewModel.undo() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Undo", tint = Color.White)
-            }
-            IconButton(onClick = { viewModel.redo() }) {
-                Icon(Icons.Default.ArrowForward, contentDescription = "Redo", tint = Color.White)
+            Row(
+                modifier = Modifier.padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = { viewModel.zoomOut() }) {
+                    Icon(Icons.Default.ZoomOut, contentDescription = "Zoom Out", tint = Color.White)
+                }
+                IconButton(onClick = { viewModel.resetZoom() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Reset Zoom", tint = Color.White)
+                }
+                IconButton(onClick = { viewModel.zoomIn() }) {
+                    Icon(Icons.Default.ZoomIn, contentDescription = "Zoom In", tint = Color.White)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = { viewModel.undo() }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Undo", tint = Color.White)
+                }
+                IconButton(onClick = { viewModel.redo() }) {
+                    Icon(Icons.Default.ArrowForward, contentDescription = "Redo", tint = Color.White)
+                }
             }
         }
     }

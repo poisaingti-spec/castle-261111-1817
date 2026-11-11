@@ -2,6 +2,7 @@ package com.crafted.castle.viewmodel
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crafted.castle.data.CanvasState
@@ -281,20 +282,21 @@ class CanvasViewModel(
         _state.value = CanvasState(
             currentTool = _state.value.currentTool,
             strokeColor = _state.value.strokeColor,
-            strokeWidth = _state.value.strokeWidth
+            strokeWidth = _state.value.strokeWidth,
+            scale = _state.value.scale,
+            offsetX = _state.value.offsetX,
+            offsetY = _state.value.offsetY,
+            elements = emptyList()
         )
-        currentElement = null
-        currentPoints.clear()
         
         viewModelScope.launch {
-            repository.clear()
+            repository.saveState(_state.value)
         }
     }
     
-    // Export functionality - all features free, no subscription required
-    fun exportCanvas() {
+    override fun onCleared() {
+        super.onCleared()
         viewModelScope.launch {
-            // Export logic - save to file or share
             repository.saveState(_state.value)
         }
     }
