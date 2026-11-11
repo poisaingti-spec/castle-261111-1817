@@ -1,5 +1,3 @@
-package com.crafted.castle
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -69,7 +67,7 @@ dependencies {
     implementation("io.insert-koin:koin-compose:3.5.0")
     
     // DataStore
-    implementation("androidx.datastore:datastore:1.0.0")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
