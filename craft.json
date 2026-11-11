@@ -1,0 +1,15 @@
+{
+    "target": "https://excalidraw.com",
+    "newAppName": "castle",
+    "newPackageName": "com.crafted.castle",
+    "studyMode": "Clean room (Default)",
+    "likenessTargetPercent": 95,
+    "achievedLikenessPercent": 98,
+    "autoMode": false,
+    "brandColorHex": "#7C3AED",
+    "customLogoText": "castle",
+    "requestHistory": [
+        "Make my own version of Excalidraw Whiteboard and call it castle. Keep the same tools, layout, and features, use header logo text \"castle\", and apply the 💜 Maitis Purple color theme.",
+        "i want to remove ads and subscription on the new app and the app must connect to all the servers the original app connect too"
+    ]
+}
