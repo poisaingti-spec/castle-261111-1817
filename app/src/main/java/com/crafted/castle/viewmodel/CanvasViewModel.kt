@@ -234,21 +234,17 @@ class CanvasViewModel(
     }
     
     fun undo() {
-        if (_state.value.elements.isEmpty()) return
+        if (undoStack.isEmpty()) return
         
         pushUndoState()
         
-        val lastElement = _state.value.elements.lastOrNull() ?: return
         val previousState = undoStack.lastOrNull()
+        undoStack.removeAt(undoStack.size - 1)
         
         if (previousState != null) {
+            redoStack.add(_state.value)
             _state.value = previousState
-            undoStack.removeAt(undoStack.size - 1)
-        } else {
-            _state.value = _state.value.copy(elements = _state.value.elements.dropLast(1))
         }
-        
-        redoStack.add(lastElement)
         
         viewModelScope.launch {
             repository.saveState(_state.value)
@@ -256,13 +252,13 @@ class CanvasViewModel(
     }
     
     fun redo() {
-        val element = redoStack.lastOrNull() ?: return
+        if (redoStack.isEmpty()) return
+        
+        val nextState = redoStack.lastOrNull() ?: return
+        redoStack.removeAt(redoStack.size - 1)
         
         pushUndoState()
-        _state.value = _state.value.copy(
-            elements = _state.value.elements + element
-        )
-        redoStack.removeAt(redoStack.size - 1)
+        _state.value = nextState
         
         viewModelScope.launch {
             repository.saveState(_state.value)
