@@ -2,7 +2,20 @@ package com.crafted.castle.data
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class SerializableOffset(
+    val x: Float,
+    val y: Float
+) {
+    fun toOffset(): Offset = Offset(x, y)
+    
+    companion object {
+        fun fromOffset(offset: Offset): SerializableOffset = SerializableOffset(offset.x, offset.y)
+    }
+}
 
 @Serializable
 sealed class DrawElement {
@@ -21,7 +34,7 @@ sealed class DrawElement {
         override val strokeWidth: Int,
         override val startX: Float,
         override val startY: Float,
-        val points: List<Offset>
+        val points: List<SerializableOffset>
     ) : DrawElement()
 
     @Serializable

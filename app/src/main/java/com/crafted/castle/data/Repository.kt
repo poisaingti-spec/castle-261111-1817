@@ -16,19 +16,18 @@ class Repository(private val context: Context) {
     val stateFlow: Flow<CanvasState> = context.dataStore.data.map { jsonString ->
         try {
             if (jsonString.isEmpty()) CanvasState()
-            else json.decodeFromString(jsonString)
+            else json.decodeFromString<CanvasState>(jsonString)
         } catch (e: Exception) {
             CanvasState()
         }
     }
 
     suspend fun saveState(state: CanvasState) {
-        // Simplified: Saving full state. In prod, save only elements to avoid saving zoom/pan constantly
         val elementsOnly = state.copy(scale = 1f, offsetX = 0f, offsetY = 0f)
-        context.dataStore.setData(json.encodeToString(elementsOnly))
+        context.dataStore.updateData { json.encodeToString(elementsOnly) }
     }
     
     suspend fun clear() {
-        context.dataStore.setData("")
+        context.dataStore.updateData { "" }
     }
 }

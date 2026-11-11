@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.crafted.castle.data.DrawElement
+import com.crafted.castle.data.SerializableOffset
 import com.crafted.castle.data.Tool
 import com.crafted.castle.viewmodel.CanvasViewModel
 import org.koin.compose.koinInject
@@ -40,7 +41,6 @@ fun CastleCanvas(viewModel: CanvasViewModel = koinInject()) {
             .pointerInput(state) {
                 detectDragGestures(
                     onDragStart = { offset ->
-                        // Convert screen coord to canvas coord
                         val x = (offset.x - state.offsetX) / state.scale
                         val y = (offset.y - state.offsetY) / state.scale
                         viewModel.startDrawing(x, y)
@@ -63,19 +63,14 @@ fun CastleCanvas(viewModel: CanvasViewModel = koinInject()) {
                 )
             }
     ) {
-        // Background
-        drawRect(Color.White) // Canvas is always white like paper
+        drawRect(Color.White)
 
         with(drawContext.canvas.nativeCanvas) {
-            // Apply Transform
             save()
             translate(state.offsetX, state.offsetY)
             scale(state.scale, state.scale)
 
-            // Draw Committed Elements
             state.elements.forEach { drawElement(it) }
-
-            // Draw Current Element (in progress)
             viewModel.currentElement?.let { drawElement(it) }
 
             restore()
@@ -128,7 +123,6 @@ private fun DrawScope.drawElement(element: DrawElement) {
                 end = Offset(element.endX, element.endY),
                 strokeWidth = element.strokeWidth.toFloat()
             )
-            // Simple Arrowhead
             val angle = Math.atan2((element.endY - element.startY).toDouble(), (element.endX - element.startX).toDouble())
             val headLen = 20
             val x1 = element.endX - headLen * Math.cos(angle - Math.PI / 6)
@@ -150,7 +144,6 @@ private fun DrawScope.drawElement(element: DrawElement) {
             )
         }
         is DrawElement.Text -> {
-            // Native Canvas Text Draw
             val textPaint = android.graphics.Paint().apply {
                 color = paintColor.toArgb()
                 textSize = element.fontSize
@@ -158,6 +151,5 @@ private fun DrawScope.drawElement(element: DrawElement) {
             }
             drawContext.canvas.nativeCanvas.drawText(element.content, element.startX, element.startY, textPaint)
         }
-        else -> {}
     }
 }

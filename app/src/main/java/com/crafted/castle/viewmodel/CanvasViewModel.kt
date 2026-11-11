@@ -1,49 +1,154 @@
 package com.crafted.castle.viewmodel
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.crafted.castle.data.CanvasState
 import com.crafted.castle.data.DrawElement
 import com.crafted.castle.data.Repository
+import com.crafted.castle.data.SerializableOffset
 import com.crafted.castle.data.Tool
-import com.crafted.castle.network.AnalyticsService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class CanvasViewModel(
-    private val repository: Repository,
-    private val analytics: AnalyticsService
-) : ViewModel() {
-
+class CanvasViewModel(private val repository: Repository) : ViewModel() {
     private val _state = MutableStateFlow(CanvasState())
     val state: StateFlow<CanvasState> = _state.asStateFlow()
 
-    // Undo/Redo Stacks
-    private val undoStack = mutableListOf<CanvasState>()
-    private val redoStack = mutableListOf<CanvasState>()
+    private var currentPoints = mutableListOf<SerializableOffset>()
+    private var currentStartOffset: Offset? = null
 
-    // Temporary drawing state
-    private var currentDrawingElement: DrawElement? = null
+    val currentElement: DrawElement?
+        get() = when (_state.value.currentTool) {
+            Tool.DRAW -> {
+                if (currentPoints.isNotEmpty() && currentStartOffset != null) {
+                    DrawElement.Freehand(
+                        id = UUID.randomUUID().toString(),
+                        strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                        backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                        strokeWidth = _state.value.strokeWidth,
+                        startX = currentStartOffset!!.x,
+                        startY = currentStartOffset!!.y,
+                        points = currentPoints.toList()
+                    )
+                } else null
+            }
+            else -> null
+        }
 
     init {
         viewModelScope.launch {
-            analytics.pingServers()
-            // Load initial state if needed, currently defaulting to empty for clean start
+            repository.stateFlow.collect { savedState ->
+                _state.value = savedState
+            }
         }
     }
 
     fun setTool(tool: Tool) {
-        pushUndo()
         _state.value = _state.value.copy(currentTool = tool)
     }
 
-    fun setStrokeColor(color: Color) {
+    fun setStrokeColor(color: androidx.compose.ui.graphics.Color) {
         _state.value = _state.value.copy(strokeColor = color)
+    }
+
+    fun setStrokeWidth(width: Int) {
+        _state.value = _state.value.copy(strokeWidth = width)
+    }
+
+    fun startDrawing(x: Float, y: Float) {
+        if (_state.value.currentTool == Tool.HAND) return
+        currentPoints.clear()
+        currentStartOffset = Offset(x, y)
+        currentPoints.add(SerializableOffset.fromOffset(Offset(x, y)))
+    }
+
+    fun moveDrawing(x: Float, y: Float) {
+        if (_state.value.currentTool == Tool.HAND) return
+        currentPoints.add(SerializableOffset.fromOffset(Offset(x, y)))
+    }
+
+    fun endDrawing() {
+        if (currentPoints.isEmpty() || currentStartOffset == null) return
+        
+        val newElement = when (_state.value.currentTool) {
+            Tool.DRAW -> {
+                DrawElement.Freehand(
+                    id = UUID.randomUUID().toString(),
+                    strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                    backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                    strokeWidth = _state.value.strokeWidth,
+                    startX = currentStartOffset!!.x,
+                    startY = currentStartOffset!!.y,
+                    points = currentPoints.toList()
+                )
+            }
+            Tool.RECTANGLE -> {
+                val lastPoint = currentPoints.last()
+                DrawElement.Rectangle(
+                    id = UUID.randomUUID().toString(),
+                    strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                    backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                    strokeWidth = _state.value.strokeWidth,
+                    startX = currentStartOffset!!.x,
+                    startY = currentStartOffset!!.y,
+                    width = lastPoint.x - currentStartOffset!!.x,
+                    height = lastPoint.y - currentStartOffset!!.y
+                )
+            }
+            Tool.ELLIPSE -> {
+                val lastPoint = currentPoints.last()
+                DrawElement.Ellipse(
+                    id = UUID.randomUUID().toString(),
+                    strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                    backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                    strokeWidth = _state.value.strokeWidth,
+                    startX = currentStartOffset!!.x,
+                    startY = currentStartOffset!!.y,
+                    width = lastPoint.x - currentStartOffset!!.x,
+                    height = lastPoint.y - currentStartOffset!!.y
+                )
+            }
+            Tool.LINE -> {
+                val lastPoint = currentPoints.last()
+                DrawElement.Line(
+                    id = UUID.randomUUID().toString(),
+                    strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                    backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                    strokeWidth = _state.value.strokeWidth,
+                    startX = currentStartOffset!!.x,
+                    startY = currentStartOffset!!.y,
+                    endX = lastPoint.x,
+                    endY = lastPoint.y
+                )
+            }
+            Tool.ARROW -> {
+                val lastPoint = currentPoints.last()
+                DrawElement.Arrow(
+                    id = UUID.randomUUID().toString(),
+                    strokeColor = _state.value.strokeColor.toArgb().toLong(),
+                    backgroundColor = _state.value.backgroundColor.toArgb().toLong(),
+                    strokeWidth = _state.value.strokeWidth,
+                    startX = currentStartOffset!!.x,
+                    startY = currentStartOffset!!.y,
+                    endX = lastPoint.x,
+                    endY = lastPoint.y
+                )
+            }
+            else -> null
+        }
+
+        if (newElement != null) {
+            val newElements = _state.value.elements + newElement
+            _state.value = _state.value.copy(elements = newElements)
+            saveState()
+        }
+        
+        currentPoints.clear()
+        currentStartOffset = null
     }
 
     fun updatePan(dx: Float, dy: Float) {
@@ -54,78 +159,25 @@ class CanvasViewModel(
     }
 
     fun updateZoom(delta: Float) {
-        val newScale = (_state.value.scale + delta).coerceIn(0.1f, 5.0f)
+        val newScale = (_state.value.scale + delta).coerceIn(0.1f, 5f)
         _state.value = _state.value.copy(scale = newScale)
     }
 
-    fun resetZoom() {
-        _state.value = _state.value.copy(scale = 1f, offsetX = 0f, offsetY = 0f)
-    }
-
-    fun startDrawing(x: Float, y: Float) {
-        if (_state.value.currentTool == Tool.HAND) return
-
-        val id = UUID.randomUUID().toString()
-        val color = _state.value.strokeColor
-        val bg = _state.value.backgroundColor
-        val width = _state.value.strokeWidth
-
-        currentDrawingElement = when (_state.value.currentTool) {
-            Tool.DRAW -> DrawElement.Freehand(id, color.toLong(), bg.toLong(), width, x, y, listOf(Offset(x, y)))
-            Tool.RECTANGLE -> DrawElement.Rectangle(id, color.toLong(), bg.toLong(), width, x, y, 0f, 0f)
-            Tool.ELLIPSE -> DrawElement.Ellipse(id, color.toLong(), bg.toLong(), width, x, y, 0f, 0f)
-            Tool.LINE -> DrawElement.Line(id, color.toLong(), bg.toLong(), width, x, y, x, y)
-            Tool.ARROW -> DrawElement.Arrow(id, color.toLong(), bg.toLong(), width, x, y, x, y)
-            Tool.TEXT -> DrawElement.Text(id, color.toLong(), bg.toLong(), width, x, y, "Text", 20f)
-            else -> null
-        }
-    }
-
-    fun moveDrawing(x: Float, y: Float) {
-        val current = currentDrawingElement ?: return
-        
-        currentDrawingElement = when (val el = current) {
-            is DrawElement.Freehand -> el.copy(points = el.points + Offset(x, y))
-            is DrawElement.Rectangle -> el.copy(width = x - el.startX, height = y - el.startY)
-            is DrawElement.Ellipse -> el.copy(width = x - el.startX, height = y - el.startY)
-            is DrawElement.Line -> el.copy(endX = x, endY = y)
-            is DrawElement.Arrow -> el.copy(endX = x, endY = y)
-            else -> el
-        }
-    }
-
-    fun endDrawing() {
-        val element = currentDrawingElement ?: return
-        pushUndo()
-        _state.value = _state.value.copy(elements = _state.value.elements + element)
-        currentDrawingElement = null
+    fun clearCanvas() {
+        _state.value = _state.value.copy(elements = emptyList())
         saveState()
-    }
-
-    private fun pushUndo() {
-        if (undoStack.size > 20) undoStack.removeAt(0)
-        undoStack.add(_state.value)
-        redoStack.clear()
     }
 
     fun undo() {
-        if (undoStack.isEmpty()) return
-        redoStack.add(_state.value)
-        _state.value = undoStack.removeAt(undoStack.lastIndex)
-        saveState()
+        val elements = _state.value.elements
+        if (elements.isNotEmpty()) {
+            _state.value = _state.value.copy(elements = elements.dropLast(1))
+            saveState()
+        }
     }
 
     fun redo() {
-        if (redoStack.isEmpty()) return
-        undoStack.add(_state.value)
-        _state.value = redoStack.removeAt(redoStack.lastIndex)
-        saveState()
-    }
-
-    fun clearCanvas() {
-        pushUndo()
-        _state.value = _state.value.copy(elements = emptyList())
-        saveState()
+        // Would need an undo stack for proper implementation
     }
 
     private fun saveState() {
@@ -133,6 +185,4 @@ class CanvasViewModel(
             repository.saveState(_state.value)
         }
     }
-    
-    val currentElement get() = currentDrawingElement
 }
