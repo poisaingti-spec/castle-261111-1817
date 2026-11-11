@@ -1,3 +1,5 @@
+package com.crafted.castle
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -64,6 +66,7 @@ dependencies {
     // DI
     implementation("io.insert-koin:koin-android:3.5.0")
     implementation("io.insert-koin:koin-androidx-compose:3.5.0")
+    implementation("io.insert-koin:koin-compose:3.5.0")
     
     // DataStore
     implementation("androidx.datastore:datastore:1.0.0")
@@ -73,6 +76,9 @@ dependencies {
     
     // Window
     implementation("androidx.window:window:1.2.0")
+    
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

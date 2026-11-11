@@ -2,11 +2,45 @@ package com.crafted.castle.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Hexagon
+import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.PanTool
+import androidx.compose.material.icons.filled.Rectangle
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SquareFoot
+import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.ZoomIn
+import androidx.compose.material.icons.filled.ZoomOut
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,10 +49,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.crafted.castle.data.Tool
-import com.crafted.castle.ui.theme.MaitisPurplePrimary
 import com.crafted.castle.ui.theme.MaitisDarkSurfaceVariant
+import com.crafted.castle.ui.theme.MaitisPurplePrimary
 import com.crafted.castle.viewmodel.CanvasViewModel
 
 @Composable
@@ -28,7 +61,7 @@ fun TopBar(viewModel: CanvasViewModel) {
             Text(
                 "castle",
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = Color.White,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
         },
@@ -38,11 +71,17 @@ fun TopBar(viewModel: CanvasViewModel) {
             actionIconContentColor = Color.White
         ),
         actions = {
-            IconButton(onClick = { viewModel.clearCanvas() }) {
-                Icon(Icons.Default.Delete, contentDescription = "Clear")
+            IconButton(onClick = { viewModel.undo() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Undo", tint = Color.White)
             }
-            IconButton(onClick = { /* Export Logic */ }) {
-                Icon(Icons.Default.Share, contentDescription = "Export")
+            IconButton(onClick = { viewModel.redo() }) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Redo", tint = Color.White)
+            }
+            IconButton(onClick = { viewModel.clearCanvas() }) {
+                Icon(Icons.Default.Delete, contentDescription = "Clear", tint = Color.White)
+            }
+            IconButton(onClick = { /* Export Logic - all features free */ }) {
+                Icon(Icons.Default.Share, contentDescription = "Export", tint = Color.White)
             }
         }
     )
@@ -52,81 +91,111 @@ fun TopBar(viewModel: CanvasViewModel) {
 fun BottomToolBar(viewModel: CanvasViewModel) {
     val state by viewModel.state.collectAsState()
     
+    val tools = listOf(
+        ToolButtonData(Icons.Default.PanTool, Tool.HAND, "Hand"),
+        ToolButtonData(Icons.Default.TouchApp, Tool.SELECTION, "Select"),
+        ToolButtonData(Icons.Default.Rectangle, Tool.RECTANGLE, "Rectangle"),
+        ToolButtonData(Icons.Default.Hexagon, Tool.DIAMOND, "Diamond"),
+        ToolButtonData(Icons.Default.Circle, Tool.ELLIPSE, "Ellipse"),
+        ToolButtonData(Icons.Default.NorthEast, Tool.ARROW, "Arrow"),
+        ToolButtonData(Icons.Default.DragHandle, Tool.LINE, "Line"),
+        ToolButtonData(Icons.Default.Edit, Tool.DRAW, "Draw"),
+        ToolButtonData(Icons.Default.Title, Tool.TEXT, "Text"),
+        ToolButtonData(Icons.Default.SquareFoot, Tool.STICKY, "Sticky"),
+        ToolButtonData(Icons.Default.Backspace, Tool.ERASER, "Eraser")
+    )
+    
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaitisDarkSurfaceVariant,
         shadowElevation = 8.dp
     ) {
-        Row(
+        LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(androidx.compose.foundation.gestures.ScrollableState { 0f }) // Simplified scroll
                 .padding(horizontal = 8.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ToolButton(Icons.Default.PanTool, Tool.HAND, state.currentTool) { viewModel.setTool(Tool.HAND) }
-            ToolButton(Icons.Default.TouchApp, Tool.SELECTION, state.currentTool) { viewModel.setTool(Tool.SELECTION) }
-            ToolButton(Icons.Default.Rectangle, Tool.RECTANGLE, state.currentTool) { viewModel.setTool(Tool.RECTANGLE) }
-            ToolButton(Icons.Default.Hexagon, Tool.DIAMOND, state.currentTool) { viewModel.setTool(Tool.DIAMOND) } // Approx
-            ToolButton(Icons.Default.Circle, Tool.ELLIPSE, state.currentTool) { viewModel.setTool(Tool.ELLIPSE) }
-            ToolButton(Icons.Default.NorthEast, Tool.ARROW, state.currentTool) { viewModel.setTool(Tool.ARROW) }
-            ToolButton(Icons.Default.DragHandle, Tool.LINE, state.currentTool) { viewModel.setTool(Tool.LINE) } // Approx
-            ToolButton(Icons.Default.Edit, Tool.DRAW, state.currentTool) { viewModel.setTool(Tool.DRAW) }
-            ToolButton(Icons.Default.Title, Tool.TEXT, state.currentTool) { viewModel.setTool(Tool.TEXT) }
-            ToolButton(Icons.Default.SquareFoot, Tool.STICKY, state.currentTool) { viewModel.setTool(Tool.STICKY) }
-            ToolButton(Icons.Default.Backspace, Tool.ERASER, state.currentTool) { viewModel.setTool(Tool.ERASER) }
+            items(tools) { toolData ->
+                ToolButton(
+                    icon = toolData.icon,
+                    tool = toolData.tool,
+                    current = state.currentTool,
+                    label = toolData.label,
+                    onClick = { viewModel.setTool(toolData.tool) }
+                )
+            }
         }
     }
 }
 
+private data class ToolButtonData(
+    val icon: ImageVector,
+    val tool: Tool,
+    val label: String
+)
+
 @Composable
-private fun ToolButton(icon: ImageVector, tool: Tool, current: Tool, onClick: () -> Unit) {
+private fun ToolButton(
+    icon: ImageVector,
+    tool: Tool,
+    current: Tool,
+    label: String,
+    onClick: () -> Unit
+) {
     val isSelected = tool == current
     Surface(
         modifier = Modifier
-            .size(48.dp)
+            .size(56.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         color = if (isSelected) MaitisPurplePrimary else Color.Transparent,
         contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = tool.name)
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
 
 @Composable
 fun FloatingActions(viewModel: CanvasViewModel) {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .align(Alignment.TopEnd),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        FloatingActionButton(onClick = { viewModel.updateZoom(0.2f) }, containerColor = MaitisPurplePrimary) {
-            Icon(Icons.Default.Add, "Zoom In")
-        }
-        FloatingActionButton(onClick = { viewModel.updateZoom(-0.2f) }, containerColor = MaitisPurplePrimary) {
-            Icon(Icons.Default.Remove, "Zoom Out")
-        }
-        FloatingActionButton(onClick = { viewModel.resetZoom() }, containerColor = MaitisDarkSurfaceVariant) {
-            Icon(Icons.Default.Refresh, "Reset")
-        }
-    }
+    val state by viewModel.state.collectAsState()
     
-    Row(
+    Surface(
         modifier = Modifier
             .padding(16.dp)
-            .align(Alignment.BottomStart),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .align(Alignment.BottomEnd),
+        shape = RoundedCornerShape(16.dp),
+        color = MaitisDarkSurfaceVariant.copy(alpha = 0.9f),
+        shadowElevation = 8.dp
     ) {
-        FloatingActionButton(onClick = { viewModel.undo() }, containerColor = MaitisDarkSurfaceVariant) {
-            Icon(Icons.Default.Undo, "Undo")
-        }
-        FloatingActionButton(onClick = { viewModel.redo() }, containerColor = MaitisDarkSurfaceVariant) {
-            Icon(Icons.Default.Redo, "Redo")
+        Row(
+            modifier = Modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { viewModel.zoomOut() }) {
+                Icon(Icons.Default.ZoomOut, contentDescription = "Zoom Out", tint = Color.White)
+            }
+            IconButton(onClick = { viewModel.resetZoom() }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Reset Zoom", tint = Color.White)
+            }
+            IconButton(onClick = { viewModel.zoomIn() }) {
+                Icon(Icons.Default.ZoomIn, contentDescription = "Zoom In", tint = Color.White)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(onClick = { viewModel.undo() }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Undo", tint = Color.White)
+            }
+            IconButton(onClick = { viewModel.redo() }) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Redo", tint = Color.White)
+            }
         }
     }
 }
